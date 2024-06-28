@@ -2,6 +2,7 @@ import { createConnection, Socket } from "net";
 
 import { CommandsHandler } from "./commands-handler";
 import { ModuleAuthentication } from "./module-authentication";
+import { PreferencesMonitor } from "./preferences-monitor";
 
 import { Logger } from "./utils/logger";
 import { sleep } from "./utils/sleep";
@@ -10,7 +11,10 @@ enum CommandCenterEvents {
 	AUTHENTICATION = "AUTHENTICATION",
 	COMMAND = "COMMAND",
 	COMMAND_RESULT = "COMMAND_RESULT",
-	MESSAGE = "MESSAGE"
+	MESSAGE = "MESSAGE",
+	PREFERENCE_DYNAMIC_CHANGE = "PREFERENCE_DYNAMIC_CHANGE",
+	PREFERENCE_VALUE_UPDATE = "PREFERENCE_VALUE_UPDATE",
+	PREFERENCE_WATCH = "PREFERENCE_WATCH"
 }
 
 const RECONNECTION_INTERVAL = 5000;
@@ -21,10 +25,15 @@ export class CommandCenter {
 	private client?: Socket;
 
 	constructor (
-		public moduleAuthentication: ModuleAuthentication,
 		public commandsHandler: CommandsHandler,
+		public moduleAuthentication: ModuleAuthentication,
+		public preferencesMonitor: PreferencesMonitor,
 		private logger: Logger
-	) { }
+	) {
+		this.preferencesMonitor.onChange.on("event", data => {
+			this.send(CommandCenterEvents.PREFERENCE_DYNAMIC_CHANGE, data);
+		});
+	}
 
 	public connect (): void {
 		this.logger.log("Connecting to command center...");
@@ -88,6 +97,16 @@ export class CommandCenter {
 				break;
 			case CommandCenterEvents.MESSAGE:
 				this.logger.log(data.message);
+				break;
+			case CommandCenterEvents.PREFERENCE_WATCH:
+				if (data.subscribe)
+					this.preferencesMonitor.startMonitoring();
+				else
+					this.preferencesMonitor.stopMonitoring();
+				break;
+			case CommandCenterEvents.PREFERENCE_VALUE_UPDATE:
+				for (const preference of data.preferences)
+					this.preferencesMonitor.updatePreferenceValue(preference.identifier, preference.value);
 				break;
 			default:
 				this.logger.warn("Unknown event:", data.event);

@@ -1,8 +1,11 @@
+import { Preference, PreferenceType } from "speakmaster-module-builder/preferences-builder";
+
 import { CommandCenter } from "./command-center";
 import { ModuleAuthentication } from "./module-authentication";
 import { CommandsHandler, FeatureCallback } from "./commands-handler";
 
 import { Logger } from "./utils/logger";
+import { PreferencesMonitor } from "./preferences-monitor";
 
 export { FeatureCallback } from "./commands-handler";
 export { IAmbiguityOption } from "./models/ambiguity-option";
@@ -13,12 +16,14 @@ export class ModuleConnection {
 	private commandsHandler: CommandsHandler;
 	private logger: Logger;
 	private moduleAuthentication: ModuleAuthentication;
+	private preferencesMonitor: PreferencesMonitor;
 
 	constructor (apiKey: string, apiSecret: string, debugging: boolean = false, speakMasterAPIUrl: string = "http://localhost:3000/api/v1/") {
 		this.logger = new Logger(debugging);
 		this.commandsHandler = new CommandsHandler(this.logger);
 		this.moduleAuthentication = new ModuleAuthentication(apiKey, apiSecret, this.logger, speakMasterAPIUrl);
-		this.commandCenter = new CommandCenter(this.moduleAuthentication, this.commandsHandler, this.logger);
+		this.preferencesMonitor = new PreferencesMonitor(this.logger);
+		this.commandCenter = new CommandCenter(this.commandsHandler, this.moduleAuthentication, this.preferencesMonitor, this.logger);
 
 		this.commandCenter.connect();
 	}
@@ -29,5 +34,9 @@ export class ModuleConnection {
 
 	public registerFeature (featureIdentifier: string, handler: FeatureCallback): void {
 		this.commandsHandler.registerFeature(featureIdentifier, handler);
+	}
+
+	public registerPreference (preference: Preference<PreferenceType>): void {
+		this.preferencesMonitor.registerPreference(preference);
 	}
 }

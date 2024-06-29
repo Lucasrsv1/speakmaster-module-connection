@@ -30,8 +30,8 @@ export class CommandCenter {
 		public preferencesMonitor: PreferencesMonitor,
 		private logger: Logger
 	) {
-		this.preferencesMonitor.onChange.on("event", data => {
-			this.send(CommandCenterEvents.PREFERENCE_DYNAMIC_CHANGE, data);
+		this.preferencesMonitor.onChange.on("event", preferences => {
+			this.send(CommandCenterEvents.PREFERENCE_DYNAMIC_CHANGE, { preferences });
 		});
 	}
 

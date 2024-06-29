@@ -2,32 +2,21 @@ import { EventEmitter } from "events";
 
 import {
 	ActionButtonPreference,
+	IPreferenceUpdate,
 	Preference,
 	PreferenceType,
 	PreferenceValue,
-	SelectOption,
 	SingleSelectPreference,
 	SortedListPreference
 } from "speakmaster-module-builder/preferences-builder";
 
 import { Logger } from "./utils/logger";
 
-export interface IPreferenceUpdate {
-	identifier: string;
-	isDisabled: boolean;
-	value: PreferenceValue;
-	buttonIcon?: string | null;
-	buttonText?: string;
-	label?: string | null;
-	list?: SelectOption<PreferenceValue>[];
-	options?: SelectOption<PreferenceValue>[];
-}
-
 export class PreferencesMonitor {
 	private monitoring: boolean;
 	private registeredPreferences: Map<string, Preference<PreferenceValue>>;
 
-	public readonly onChange: EventEmitter<{ event: [IPreferenceUpdate | IPreferenceUpdate[]] }>;
+	public readonly onChange: EventEmitter<{ event: [IPreferenceUpdate<PreferenceValue> | IPreferenceUpdate<PreferenceValue>[]] }>;
 
 	constructor (private logger: Logger) {
 		this.monitoring = false;
@@ -37,7 +26,7 @@ export class PreferencesMonitor {
 
 	public startMonitoring (): void {
 		this.monitoring = true;
-		const preferenceUpdates: IPreferenceUpdate[] = [];
+		const preferenceUpdates: IPreferenceUpdate<PreferenceValue>[] = [];
 		for (const preference of this.registeredPreferences.values())
 			preferenceUpdates.push(this.getPreferenceUpdate(preference));
 
@@ -78,8 +67,8 @@ export class PreferencesMonitor {
 		this.onChange.emit("event", changeUpdate);
 	}
 
-	public getPreferenceUpdate (preference: Preference<PreferenceValue>): IPreferenceUpdate {
-		const changeUpdate: IPreferenceUpdate = {
+	public getPreferenceUpdate (preference: Preference<PreferenceValue>): IPreferenceUpdate<PreferenceValue> {
+		const changeUpdate: IPreferenceUpdate<PreferenceValue> = {
 			identifier: preference.identifier,
 			isDisabled: preference.isDisabled,
 			value: preference.value
